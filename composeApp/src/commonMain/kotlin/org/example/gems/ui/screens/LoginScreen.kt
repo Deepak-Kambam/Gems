@@ -20,6 +20,10 @@ import org.example.gems.ui.components.IOSButton
 import org.example.gems.ui.components.IOSTextField
 import org.example.gems.ui.theme.GEMSPrimary
 import org.example.gems.ui.theme.GEMSSecondary
+import org.example.gems.repository.AuthRepository
+import kotlinx.coroutines.launch
+
+
 
 @Composable
 fun LoginScreen() {
@@ -27,6 +31,9 @@ fun LoginScreen() {
     var usn by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val authRepository = remember { AuthRepository() }
 
     Box(
         modifier = Modifier
@@ -100,9 +107,29 @@ fun LoginScreen() {
                     text = "Sign In",
                     onClick = {
                         isLoading = true
-                        navController.clearAndNavigate(Screen.Dashboard)
+                        errorMessage = null
+                        scope.launch {
+                            try {
+                                val response = authRepository.login(usn)
+                                println("Login success: $response")
+                                navController.clearAndNavigate(Screen.Dashboard)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                isLoading = false
+                                errorMessage = "Login failed: ${e.message ?: "Unknown error"}"
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+            
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
@@ -111,6 +138,17 @@ fun LoginScreen() {
             TextButton(onClick = { /* Handle Forgot Password */ }) {
                 Text("Forgot Password?", color = MaterialTheme.colorScheme.primary)
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            IOSButton(
+                text = "Sign In(Test)",
+                onClick = {
+                    isLoading = true
+                    navController.clearAndNavigate(Screen.Dashboard)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
